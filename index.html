@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
+        <title>Cs</title>
+        <script src="ThirdParty/Cesium/Cesium.js"></script>
+        <script src="ThirdParty/Jquery.js"></script>
+        <link rel="stylesheet" href="css/index.css" media="screen">
+    </head>
+    <body>
+        <div id="cesiumContainer"></div>
+
+        <div class="backdrop" id="menu">
+            <h2>Cesium</h2>
+            <input title="Volume" type="range" min="0" max="1" value="1" step="0.01" oninput="audio.volume=this.value" onchange="audio.volume=this.value" />
+        </div>
+        <div id="loadingIndicator" class="cover">
+            <div id="loadingIcon" class="loadingIndicator"></div>
+        </div>
+        <script src="Source/Includes/Functions.js"></script>
+        <script src="Source/Includes/Bootstrapper.js"></script>
+        <script src="Source/Includes/Classes/Country.js"></script>
+
+        <script src="Source/App.js"></script>
+
+    </body>
+</html>
