@@ -15,11 +15,23 @@ var viewer = new Cesium.Viewer('cesiumContainer', {
     imageryProvider: Cesium.createOpenStreetMapImageryProvider({
         url : 'https://a.tile.openstreetmap.org/'
     }),
+    // Requires cesium ion api key
     //terrainProvider: Cesium.createWorldTerrain({
     //    requestWaterMask: false, // true required for water effects
     //    requestVertexNormals: false // true required for terrain lighting
     //})
 });
+
+var globalConfig = {
+    countryTransparency: 'ff',
+    countryHeight: 5000,
+    positionHeight: 10000,
+    wallHeight: 10000,
+    amountOfPositions: 10,
+    console_log: true
+};
+// Toggle console logs
+var log = globalConfig.console_log ? console.log.bind(window.console) : function () {};
 
 // FPS meter
 viewer.scene.debugShowFramesPerSecond = true;
@@ -30,14 +42,6 @@ loadCountries();
 var addedEntities = {};
 addInitialEntities();
 
-var globalConfig = {
-    countryTransparency: 'ff',
-    countryHeight: 5000,
-    positionHeight: 10000,
-    wallHeight: 10000,
-    amountOfPositions: 10,
-};
-
 var ScreenSpaceEventHandler = new Cesium.ScreenSpaceEventHandler(viewer.canvas);
 viewer.cesiumWidget.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
 
@@ -46,7 +50,7 @@ viewer.scene.globe.depthTestAgainstTerrain = false;
 
 // Watch clock multiplier changes
 Cesium.knockout.getObservable(viewer.clockViewModel, 'multiplier').subscribe(function (clockMultiplier) {
-    console.log('Clock multiplier changed to ' + clockMultiplier);
+    log('Clock multiplier changed to ' + clockMultiplier);
     // Locks multiplier to 1
     //viewer.clockViewModel.multiplier = 1;
 });
@@ -78,22 +82,23 @@ counterDisplay.style.padding    = '10px';
 document.getElementById('menu').appendChild(counterDisplay);
 
 // @todo this is temporary
-console.log(addedEntities);
+log(addedEntities);
 
 // Watch for entity selects/deselects
 viewer.selectedEntityChanged.addEventListener(function (entity) {
 
     if (Cesium.defined(entity) === false) {
-        console.log('Deselected an entity, stopping line preview');
+        log('Deselected an entity, stopping line preview');
         stopTravelLinePreview();
         return;
     }
 
-    console.log('Selected ' + entity._type + ' ' + (entity.id || entity.name));
+    log('Selected ' + entity._type + ' ' + (entity.id || entity.name));
+    log({entity});
 
     if (isTravelling) {
         // An entity was selected while another was travelling, cancel the select
-        console.log('Selected something while travelling, cancelling...');
+        log('Selected something while travelling, cancelling...');
         // Cancel the selection
         viewer.selectedEntity = null;
         return;
@@ -101,12 +106,12 @@ viewer.selectedEntityChanged.addEventListener(function (entity) {
 
     if (selectedEntityHandler) {
         // Selected a different entity, stop the old travel line preview
-        console.log('selectedEntityHandler already defined, stopping line preview');
+        log('selectedEntityHandler already defined, stopping line preview');
         stopTravelLinePreview();
     }
 
     if (entity._type !== 'movable') {
-        console.log('Entity type not movable')
+        log('Entity type not movable')
         return;
     }
 
@@ -118,7 +123,7 @@ viewer.selectedEntityChanged.addEventListener(function (entity) {
  * @param entity
  */
 function initTravelLinePreview(entity) {
-    console.log('initTravelLinePreview() called');
+    log('initTravelLinePreview() called');
 
     // Copy entity data to set it as active
     travellingEntity = entity;
@@ -157,7 +162,7 @@ function initTravelLinePreview(entity) {
  *
  */
 function stopTravelLinePreview() {
-    console.log('stopTravelLinePreview() called');
+    log('stopTravelLinePreview() called');
     viewer.entities.remove(floatingPoint);
     activeShapePoints.pop();
 
@@ -170,7 +175,7 @@ function stopTravelLinePreview() {
     }
 
     if (selectedEntityHandler && !selectedEntityHandler.isDestroyed()) {
-        console.log('Destroying selectedEntityHandler');
+        log('Destroying selectedEntityHandler');
         selectedEntityHandler.destroy();
     }
 }
@@ -307,8 +312,8 @@ function createPath(czml) {
 
                 isTravelling = true;
 
-                console.log(travellingEntity);
-                console.log('Pre-travel: Removing travelling entity ' + travellingEntity._id)
+                log(travellingEntity);
+                log('Pre-travel: Removing travelling entity ' + travellingEntity._id)
                 viewer.entities.remove(travellingEntity);
 
                 viewer.clock.shouldAnimate = true;
@@ -328,18 +333,18 @@ function createPath(czml) {
             if (absoluteTravelled > maxTravelTicks || clock.currentTime.secondsOfDay === stopTime) {
                 if (clock.currentTime.secondsOfDay === stopTime) {
                     // end of path was reached
-                    console.log('end of the line');
+                    log('end of the line');
                 }
                 else {
                     // var i reached limit
-                    console.log('reached i limit');
+                    log('reached i limit');
                 }
 
                 let finalPosition = pathEntity.position.getValue(clock.currentTime);
-                console.log('Final position');
-                console.log(finalPosition);
+                log('Final position');
+                log(finalPosition);
 
-                console.log('After-travel: adding travelling entity ' + travellingEntity._id)
+                log('After-travel: adding travelling entity ' + travellingEntity._id)
                 travellingEntity.position = finalPosition;
                 viewer.entities.add(travellingEntity);
 
@@ -362,11 +367,11 @@ function createPath(czml) {
                         return; // forEach equivalent of 'continue';
                     }
                     let distance = Cesium.Cartesian3.distance(finalPosition, addedEntities[key]._position._value);
-                    console.log(key);
-                    console.log('Distance to (travel)entity: ' + distance);
+                    log( key);
+                    log('Distance to ' + addedEntities[key]._type + 'entity: ' + distance);
 
                     if (distance < 25000) {
-                        console.log('I\'ll count that as an impact, playing Impact by grande1899');
+                        log('I\'ll count that as an impact, playing Impact by grande1899');
                         // hmm
                         audio.play();
                     }
@@ -430,7 +435,7 @@ function getPositionsBetweenTwoPositions(startPosition, stopPosition, amountOfPo
 function setHeightOfPosition(position, height) {
     let cartographicPosition    = Cesium.Cartographic.fromCartesian(position);
     cartographicPosition.height = height;
-    return viewer.scene.globe.ellipsoid.cartographicToCartesian(cartographicPosition, new Cesium.Cartesian3());
+    return Cesium.Ellipsoid.WGS84.cartographicToCartesian(cartographicPosition);
 }
 
 /**
@@ -527,7 +532,7 @@ function drawTemporaryShape(positionData) {
 ScreenSpaceEventHandler.setInputAction(function () {
     // Must have at least 2 points to draw a path
     if (activeShapePoints.length < 2) {
-        console.log(activeShapePoints)
+        log(activeShapePoints)
         return;
     }
 
@@ -547,9 +552,9 @@ ScreenSpaceEventHandler.setInputAction(function () {
         travelTime = 1;
     }
 
-    console.log('Start: ' + startPosition);
-    console.log('Stop: ' + stopPosition);
-    console.log('Distance: ' + distance);
+    log('Start: ' + startPosition);
+    log('Stop: ' + stopPosition);
+    log('Distance: ' + distance);
     let czml = createCZML(startPosition, stopPosition, travelTime, billboard);
     createPath(czml);
 

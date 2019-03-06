@@ -26,6 +26,13 @@ function addInitialEntities() {
             color: Cesium.Color.GREEN.withAlpha(0.99),
             position: new Cesium.Cartesian3(1215311.8331818907, -4995431.494990685, 3795792.518838148)
         }
+        ,
+        {
+            name: 'Entity 5',
+            type: 'static',
+            color: Cesium.Color.PURPLE.withAlpha(0.99),
+            position: new Cesium.Cartesian3(2303713.6922442135, -4884311.898972188, 3391662.221364195)
+        }
     ];
     for (let i = 0; i < entities.length; i++) {
         let entity               = entities[i];
@@ -43,7 +50,8 @@ function addInitialEntities() {
             point: {
                 pixelSize: 20.0,
                 color: entity.color,
-                zIndex: 10
+                zIndex: 10,
+                scaleByDistance: new Cesium.NearFarScalar(1.5e2, 2.0, 1.5e7, 0.5)
             },
             description: description,
             billboard: {},
@@ -53,20 +61,28 @@ function addInitialEntities() {
 
         addedEntities[entity._id] = entity;
 
-        console.log('Added entity ' + entity.label + ': ' + entity._id);
+        log('Added entity ' + entity.label + ': ' + entity._id);
     }
 }
 
 function loadCountries() {
     //$.get('./Source/Data/world_borders.kml', function (kml) {
     //$.get('./Source/Data/countries_world.kml', function (kml) {
-    $.get('./Source/Data/countries_world_clean.kml', function (kml) {
+
+    // $.get('./Source/Data/sov.kml', function (kml) {
+    // $.get('./Source/Data/countries_world_clean.kml', function (kml) {
+
+    let DOMParserObject     = new DOMParser();
+    let XMLSerializerObject = new XMLSerializer();
+
+    $.get('./Source/Data/sov.kml', function (kml) {
         let xml = $(kml);
 
         xml.find('Placemark').each(function () {
-            let name      = $(this).find('name').text();
-            let color     = intToRGB(hashCode(name));
-            let splitXml  = new XMLSerializer().serializeToString($(this).get(0)).split('</name>');
+            let name  = $(this).find('name').text();
+            let color = intToRGB(hashCode(name));
+
+            let splitXml  = XMLSerializerObject.serializeToString($(this).get(0)).split('</name>');
             let xmlString = splitXml[0] + '</name>' +
                 '<Style><LineStyle><color>ff000000</color></LineStyle><PolyStyle><fill>1</fill><color>' + globalConfig.countryTransparency + color + '</color></PolyStyle></Style>' +
                 splitXml[1];
@@ -75,17 +91,80 @@ function loadCountries() {
             // $(this).find('LineStyle color').text('ff000000');
             // let xmlString = new XMLSerializer().serializeToString($(this).get(0));
 
-            let newCountry       = new Country(name);
+            let xmlParser     = (xmlString) => {
+                return DOMParserObject.parseFromString(xmlString, 'text/xml');
+            };
+            let kmlDataSource = xmlParser(xmlString);
+
+            let newCountry = new Country(name);
+
+            // Calculate country center point
+
+            let coordinates               = $(kmlDataSource).find('coordinates');
+            let countryCoordinates        = [];
+            let entityCoordinatesCount    = 0;
+            let maxEntityCoordinatesCount = -1;
+
+            for (let j = 0; j < coordinates.length; j++) {
+                let coordinatesArray = coordinates[j].innerHTML.split(',');
+
+                if (coordinatesArray.length > 1) {
+                    // Merge last coordinate into the first coordinate
+                    coordinatesArray[0] = coordinatesArray[coordinatesArray.length - 1] + ' ' + coordinatesArray[0];
+                    // Remove last coordinate
+                    coordinatesArray.pop();
+                }
+
+                entityCoordinatesCount = coordinatesArray.length;
+
+                // Reset coordinates, only the entity with the most coordinates is used
+                if (entityCoordinatesCount > maxEntityCoordinatesCount) {
+                    countryCoordinates = [];
+                    // Add all coordinates to the country
+                    for (let k = 1; k < coordinatesArray.length; k++) {
+                        let splitLatLon = coordinatesArray[k].split(' ');
+                        countryCoordinates.push({latitude: splitLatLon[0], longitude: splitLatLon[1]});
+                    }
+                    maxEntityCoordinatesCount = entityCoordinatesCount;
+                }
+            }
+
+            // Manually adjust? Countries with center point in a different country
+            // Zambia
+            // Vietnam
+            // Croatia
+            // Chile
+            // Peru
+            // Laos
+
+            let polygonCenter      = averageGeolocation(countryCoordinates);
+            let cartographicCenter = new Cesium.Cartographic(polygonCenter.longitude, polygonCenter.latitude, 10000);
+            let cartesianCenter    = Cesium.Ellipsoid.WGS84.cartographicToCartesian(cartographicCenter);
+
+            viewer.entities.add({
+                position: cartesianCenter,
+                point: {
+                    pixelSize: 20.0,
+                    color: Cesium.Color.BLACK,
+                    zIndex: 10,
+                    scaleByDistance: new Cesium.NearFarScalar(1.5e2, 2.0, 1.5e7, 0.5)
+                },
+                description: name + ' polygon center',
+                billboard: {},
+                label: name + ' polygon center',
+                type: 'Country center',
+            });
+
+            // Add countries to map //
+
             let countriesPromise = Cesium.KmlDataSource.load(
-                new DOMParser().parseFromString(xmlString, "text/xml"),
+                kmlDataSource,
                 {
                     camera: viewer.scene.camera,
                     canvas: viewer.scene.canvas
                 }
             );
-
             countriesPromise.then(function (dataSource) {
-                let entities = dataSource.entities.values;
 
                 let description = '<table class="cesium-infoBox-defaultTable cesium-infoBox-defaultTable-lighter"><tbody>' +
                     '<tr><th>' + "Name" + '</th><td>' + newCountry.name + '</td></tr>' +
@@ -93,8 +172,10 @@ function loadCountries() {
                     '</tbody></table>';
 
                 // Add a height, description, and parent to each entity
+                let entities = dataSource.entities.values;
                 for (let i = 0; i < entities.length; i++) {
-                    let entity         = entities[i];
+                    let entity = entities[i];
+
                     entity.description = description;
                     entity.parent      = newCountry.entity;
                     if (typeof entity.polygon !== "undefined") {
@@ -118,4 +199,13 @@ function unloadCountries() {
         Countries[key].removeFromMap();
     });
     Countries = {};
+}
+
+function logCountryEntities() {
+    Object.keys(Countries).forEach(function (key, index) {
+        let CountryEntities = Countries[key].entities;
+        for (let i = 0; i < CountryEntities.length; i++) {
+            log(CountryEntities[i]);
+        }
+    });
 }
