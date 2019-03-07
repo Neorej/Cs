@@ -22,6 +22,12 @@ class Country {
         }
     }
 
+    removeFromMap() {
+        for (let i = 0; i < this.entities.length; i++) {
+            viewer.entities.remove(this.entities[i]);
+        }
+    }
+
     show() {
         this.entity.show = true;
     }
@@ -30,13 +36,19 @@ class Country {
         this.entity.show = false;
     }
 
-    removeFromMap() {
-        for (let i = 0; i < this.entities.length; i++) {
-            viewer.entities.remove(this.entities[i]);
-        }
-    }
-
     getJavascriptName() {
         return this.name.cleanup();
+    }
+
+    changeColor(color)
+    {
+        for (let i = 0; i < this.entities.length; i++) {
+            let entity = this.entities[i];
+            if (typeof entity.polygon !== "undefined") {
+                //entity.polygon.extrudedHeight = 25000;
+                //entity.polygon.material.color = Cesium.Color.BLACK;
+                entity.polygon.material.color = color;
+            }
+        }
     }
 }

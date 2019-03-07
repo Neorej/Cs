@@ -5,32 +5,32 @@ function addInitialEntities() {
         {
             name: 'Entity 1',
             type: 'movable',
-            color: Cesium.Color.RED.withAlpha(0.99),
+            color: Cesium.Color.RED,
             position: new Cesium.Cartesian3(-1519037.052385547, -4843284.937023628, 3882013.5913742846)
         },
         {
             name: 'Entity 2',
             type: 'movable',
-            color: Cesium.Color.YELLOW.withAlpha(0.99),
+            color: Cesium.Color.YELLOW,//.withAlpha(0.99),
             position: new Cesium.Cartesian3(-362781.2420751273, -5249603.470917346, 3627369.861845183)
         },
         {
             name: 'Entity 3',
             type: 'movable',
-            color: Cesium.Color.BLUE.withAlpha(0.99),
+            color: Cesium.Color.BLUE,
             position: new Cesium.Cartesian3(1337335.1879538123, -4656212.598537068, 4144066.5366728287)
         },
         {
             name: 'Entity 4',
             type: 'movable',
-            color: Cesium.Color.GREEN.withAlpha(0.99),
+            color: Cesium.Color.GREEN,
             position: new Cesium.Cartesian3(1215311.8331818907, -4995431.494990685, 3795792.518838148)
         }
         ,
         {
             name: 'Entity 5',
             type: 'static',
-            color: Cesium.Color.PURPLE.withAlpha(0.99),
+            color: Cesium.Color.PURPLE,
             position: new Cesium.Cartesian3(2303713.6922442135, -4884311.898972188, 3391662.221364195)
         }
     ];
@@ -50,6 +50,7 @@ function addInitialEntities() {
             point: {
                 pixelSize: 20.0,
                 color: entity.color,
+                outlineWidth: 3,
                 zIndex: 10,
                 scaleByDistance: new Cesium.NearFarScalar(1.5e2, 2.0, 1.5e7, 0.5)
             },
@@ -89,14 +90,15 @@ function loadCountries() {
 
             // $(this).find('PolyStyle').append('<color>' + globalConfig.countryTransparency + color + '</color>');
             // $(this).find('LineStyle color').text('ff000000');
-            // let xmlString = new XMLSerializer().serializeToString($(this).get(0));
+            // let xmlString = XMLSerializerObject.serializeToString($(this).get(0));
+
 
             let xmlParser     = (xmlString) => {
                 return DOMParserObject.parseFromString(xmlString, 'text/xml');
             };
             let kmlDataSource = xmlParser(xmlString);
 
-            let newCountry = new Country(name);
+            let CountryObject = new Country(name);
 
             // Calculate country center point
 
@@ -141,11 +143,13 @@ function loadCountries() {
             let cartographicCenter = new Cesium.Cartographic(polygonCenter.longitude, polygonCenter.latitude, 10000);
             let cartesianCenter    = Cesium.Ellipsoid.WGS84.cartographicToCartesian(cartographicCenter);
 
-            viewer.entities.add({
+            let entity                = viewer.entities.add({
                 position: cartesianCenter,
                 point: {
                     pixelSize: 20.0,
                     color: Cesium.Color.BLACK,
+                    outlineColor: Cesium.Color.WHITE,
+                    outlineWidth: 3,
                     zIndex: 10,
                     scaleByDistance: new Cesium.NearFarScalar(1.5e2, 2.0, 1.5e7, 0.5)
                 },
@@ -153,7 +157,9 @@ function loadCountries() {
                 billboard: {},
                 label: name + ' polygon center',
                 type: 'Country center',
+                Country: CountryObject
             });
+            addedEntities[entity._id] = entity;
 
             // Add countries to map //
 
@@ -165,10 +171,12 @@ function loadCountries() {
                 }
             );
             countriesPromise.then(function (dataSource) {
+                // Add to map (async)
+                viewer.dataSources.add(dataSource);
 
                 let description = '<table class="cesium-infoBox-defaultTable cesium-infoBox-defaultTable-lighter"><tbody>' +
-                    '<tr><th>' + "Name" + '</th><td>' + newCountry.name + '</td></tr>' +
-                    '<tr><th>' + "JS name" + '</th><td>' + newCountry.getJavascriptName() + '</td></tr>' +
+                    '<tr><th>' + "Name" + '</th><td>' + CountryObject.name + '</td></tr>' +
+                    '<tr><th>' + "JS name" + '</th><td>' + CountryObject.getJavascriptName() + '</td></tr>' +
                     '</tbody></table>';
 
                 // Add a height, description, and parent to each entity
@@ -177,15 +185,14 @@ function loadCountries() {
                     let entity = entities[i];
 
                     entity.description = description;
-                    entity.parent      = newCountry.entity;
+                    entity.parent      = CountryObject.entity;
                     if (typeof entity.polygon !== "undefined") {
                         entity.polygon.extrudedHeight = globalConfig.countryHeight;
-                        newCountry.addEntity(entity);
+                        CountryObject.addEntity(entity);
                     }
                 }
 
-                Countries[newCountry.getJavascriptName()] = newCountry;
-                newCountry.addToMap();
+                Countries[CountryObject.getJavascriptName()] = CountryObject;
             }).otherwise(function (error) {
                 //Display any errors encountered while loading.
                 window.alert(error);

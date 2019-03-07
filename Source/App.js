@@ -363,22 +363,27 @@ function createPath(czml) {
                 viewer.dataSources.remove(dataSourceReference);
 
                 Object.keys(addedEntities).forEach(function (key) {
-                    if (typeof addedEntities[key]._position === "undefined" || key === travellingEntity._id) {
+                    if (typeof addedEntities[key].position === "undefined" || key === travellingEntity.id) {
                         return; // forEach equivalent of 'continue';
                     }
-                    let distance = Cesium.Cartesian3.distance(finalPosition, addedEntities[key]._position._value);
-                    log( key);
-                    log('Distance to ' + addedEntities[key]._type + 'entity: ' + distance);
+                    let entity = addedEntities[key];
+                    let distance = Cesium.Cartesian3.distance(finalPosition, entity.position._value);
+
+                    log('Distance to ' + key + ' | ' + entity.type + ' entity: ' + distance);
 
                     if (distance < 25000) {
                         log('I\'ll count that as an impact, playing Impact by grande1899');
                         // hmm
                         audio.play();
+
+                        if(entity.type === 'Country center')
+                        {
+                            entity.Country.changeColor(travellingEntity.point.color);
+                        }
                     }
                 });
 
             }
-
 
             if (pathEntity) {
                 counterDisplay.textContent = 'Travelled: ' + Math.round(absoluteTravelled) + ' / ' + maxTravelTicks;
