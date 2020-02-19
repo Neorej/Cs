@@ -14,15 +14,25 @@
 
         <div class="backdrop" id="menu">
             <h2>Cesium</h2>
-            <input title="Volume" type="range" min="0" max="1" value="1" step="0.01" oninput="audio.volume=this.value" onchange="audio.volume=this.value" />
+            <span id="volume_icon">🔊</span><input title="Volume" type="range" min="0" max="1" value="1" step="0.01" oninput="audio.volume=this.value" onchange="audio.volume=this.value" />
+
+            <br>
+            <span>Distance</span> <input id="movement_distance" type="number" step="1" /> KM<br>
+            <span>Heading</span> <input id="movement_heading" type="number" step="1" /> °<br>
+            <button id="move_button">Go</button>
+
+            <br><br>
         </div>
+
         <div id="loadingIndicator" class="cover">
             <div id="loadingIcon" class="loadingIndicator"></div>
         </div>
+        <script src="Source/Includes/Classes/Country.js"></script>
+        <script src="Source/Includes/Classes/Origin.js"></script>
+
         <script src="Source/Includes/Functions.js"></script>
         <script src="Source/Includes/Bootstrapper.js"></script>
-        <script src="Source/Includes/Classes/Country.js"></script>
-
+        <script src="Source/Includes/Movement.js"></script>
         <script src="Source/App.js"></script>
 
     </body>

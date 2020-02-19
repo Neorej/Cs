@@ -136,8 +136,6 @@ function loadCountries() {
             // Vietnam
             // Croatia
             // Chile
-            // Peru
-            // Laos
 
             let polygonCenter      = averageGeolocation(countryCoordinates);
             let cartographicCenter = new Cesium.Cartographic(polygonCenter.longitude, polygonCenter.latitude, 10000);

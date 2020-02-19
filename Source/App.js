@@ -6,14 +6,14 @@
 //  "use strict";
 
 var viewer = new Cesium.Viewer('cesiumContainer', {
-    scene3DOnly: false,
+    scene3DOnly       : false,
     selectionIndicator: false,
-    baseLayerPicker: false,
-    shouldAnimate: false,
-    shadows: false,
-    geocoder: false,
-    imageryProvider: Cesium.createOpenStreetMapImageryProvider({
-        url : 'https://a.tile.openstreetmap.org/'
+    baseLayerPicker   : false,
+    shouldAnimate     : false,
+    shadows           : false,
+    geocoder          : false,
+    imageryProvider   : Cesium.createOpenStreetMapImageryProvider({
+        url: 'https://a.tile.openstreetmap.org/',
     }),
     // Requires cesium ion api key
     //terrainProvider: Cesium.createWorldTerrain({
@@ -24,14 +24,15 @@ var viewer = new Cesium.Viewer('cesiumContainer', {
 
 var globalConfig = {
     countryTransparency: 'ff',
-    countryHeight: 5000,
-    positionHeight: 10000,
-    wallHeight: 10000,
-    amountOfPositions: 10,
-    console_log: true
+    countryHeight      : 5000,
+    positionHeight     : 10000,
+    wallHeight         : 10000,
+    amountOfPositions  : 10,
+    console_log        : true,
 };
 // Toggle console logs
-var log = globalConfig.console_log ? console.log.bind(window.console) : function () {};
+var log          = globalConfig.console_log ? console.log.bind(window.console) : function() {
+};
 
 // FPS meter
 viewer.scene.debugShowFramesPerSecond = true;
@@ -49,7 +50,7 @@ var depthTestAgainstTerrain                = false;
 viewer.scene.globe.depthTestAgainstTerrain = false;
 
 // Watch clock multiplier changes
-Cesium.knockout.getObservable(viewer.clockViewModel, 'multiplier').subscribe(function (clockMultiplier) {
+Cesium.knockout.getObservable(viewer.clockViewModel, 'multiplier').subscribe(function(clockMultiplier) {
     log('Clock multiplier changed to ' + clockMultiplier);
     // Locks multiplier to 1
     //viewer.clockViewModel.multiplier = 1;
@@ -64,28 +65,38 @@ var wallShape;
 var activeShapePoints = [];
 var activeShape;
 var floatingPoint;
-var audio = new Audio('Source/Music/impact.mp3');
+var audio             = new Audio('Source/Music/impact.mp3');
 
 let billboard = {
-    image: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMjHxIGmVAAAA1klEQVQ4T43SoRIBURjF8Rs2CMIGQRDEDaLoATyCIIoeQNBEDyB4AMEDiKLgAQRBEERREK7/MfuZe9fd4cz8Zmfv9x2zFkd8YIOO9979oljpXl4fmKORKhjFim2sg/sLRqmSKO/F4KCPg51jj57Ng724GAzGuJbzJ1ZoBfN0UUgTC+h760DvYYoM9UVDutjaLk74q5h6cfVFokea4eunQrpIhjjbHNGfQ4mKpMDOznHEwObB3mchxxJ69bq/YYKsWqoWtairivqAPFUwihVFj1ikFmPevQATq1y9UjnbXQAAAABJRU5ErkJggg==",
+    image: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAZdEVYdFNvZnR3YXJlAHBhaW50Lm5ldCA0LjAuMjHxIGmVAAAA1klEQVQ4T43SoRIBURjF8Rs2CMIGQRDEDaLoATyCIIoeQNBEDyB4AMEDiKLgAQRBEERREK7/MfuZe9fd4cz8Zmfv9x2zFkd8YIOO9979oljpXl4fmKORKhjFim2sg/sLRqmSKO/F4KCPg51jj57Ng724GAzGuJbzJ1ZoBfN0UUgTC+h760DvYYoM9UVDutjaLk74q5h6cfVFokea4eunQrpIhjjbHNGfQ4mKpMDOznHEwObB3mchxxJ69bq/YYKsWqoWtairivqAPFUwihVFj1ikFmPevQATq1y9UjnbXQAAAABJRU5ErkJggg==',
     scale: 2.0, // default: 1.0
 };
 
-let travelDisplay              = document.createElement('div');
-travelDisplay.style.background = 'rgba(0, 0, 0, 1)';
-travelDisplay.style.padding    = '10px';
-document.getElementById('menu').appendChild(travelDisplay);
+function addBasicMenuElement() {
+    let element              = document.createElement('div');
+    element.style.background = 'rgba(0, 0, 0, 1)';
+    element.style.padding    = '0px 0px 0px 10px'; // 10 left
+    document.getElementById('menu').appendChild(element);
 
-let counterDisplay              = document.createElement('div');
-counterDisplay.style.background = 'rgba(0, 0, 0, 1)';
-counterDisplay.style.padding    = '10px';
-document.getElementById('menu').appendChild(counterDisplay);
+    return element;
+}
+
+let travelDisplay            = addBasicMenuElement();
+let counterDisplay           = addBasicMenuElement();
+let locationDisplayX         = addBasicMenuElement();
+let locationDisplayY         = addBasicMenuElement();
+let locationDisplayZ         = addBasicMenuElement();
+let locationDisplayLatitude  = addBasicMenuElement();
+let locationDisplayLongitude = addBasicMenuElement();
+
+let locationDisplayDMSLatitude  = addBasicMenuElement();
+let locationDisplayDMSLongitude = addBasicMenuElement();
 
 // @todo this is temporary
 log(addedEntities);
 
 // Watch for entity selects/deselects
-viewer.selectedEntityChanged.addEventListener(function (entity) {
+viewer.selectedEntityChanged.addEventListener(function(entity) {
 
     if (Cesium.defined(entity) === false) {
         log('Deselected an entity, stopping line preview');
@@ -111,7 +122,7 @@ viewer.selectedEntityChanged.addEventListener(function (entity) {
     }
 
     if (entity._type !== 'movable') {
-        log('Entity type not movable')
+        log('Entity type not movable');
         return;
     }
 
@@ -133,7 +144,7 @@ function initTravelLinePreview(entity) {
     depthTestAgainstTerrain                    = true;
 
     selectedEntityHandler = new Cesium.ScreenSpaceEventHandler(viewer.canvas);
-    selectedEntityHandler.setInputAction(function (event) {
+    selectedEntityHandler.setInputAction(function(event) {
         if (Cesium.defined(floatingPoint) && Cesium.defined(floatingPoint.position)) {
             let newPosition = viewer.scene.pickPosition(event.endPosition);
             if (Cesium.defined(newPosition)) {
@@ -144,15 +155,17 @@ function initTravelLinePreview(entity) {
         }
     }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
 
+    // bugged, entity.position is sometimes undefined here, don't know why
     let earthPosition = entity.position._value;
 
     if (activeShapePoints.length === 0) {
         floatingPoint = createPoint(earthPosition);
         activeShapePoints.push(earthPosition);
-        let dynamicPositions = new Cesium.CallbackProperty(function () {
+        let dynamicPositions = new Cesium.CallbackProperty(function() {
             return activeShapePoints;
         }, false);
-        activeShape          = drawTemporaryShape(dynamicPositions);
+
+        activeShape = drawTemporaryShape(dynamicPositions);
     }
 
     activeShapePoints.push(earthPosition);
@@ -189,7 +202,7 @@ function stopTravelLinePreview() {
  * @returns {*[]}
  */
 function createCZML(start, stop, runForSeconds, billboard) {
-    let positions           = getPositionsBetweenTwoPositions(start, stop, globalConfig.amountOfPositions, runForSeconds)
+    let positions           = getPositionsBetweenTwoPositions(start, stop, globalConfig.amountOfPositions, runForSeconds);
     let heightedPositions   = setHeightOfPositionsArray(positions, globalConfig.positionHeight);
     let cartographicRadians = convertPositionsToCartographicRadians(heightedPositions, runForSeconds);
 
@@ -198,87 +211,88 @@ function createCZML(start, stop, runForSeconds, billboard) {
     stopTime.setSeconds(stopTime.getSeconds() + runForSeconds);
 
     let CesiumClock  = new Cesium.Clock({
-        startTime: Cesium.JulianDate.fromDate(startTime),
+        startTime  : Cesium.JulianDate.fromDate(startTime),
         currentTime: Cesium.JulianDate.fromDate(startTime),
-        stopTime: Cesium.JulianDate.fromDate(stopTime),
-        clockRange: Cesium.ClockRange.LOOP_STOP,
-        clockStep: Cesium.ClockStep.SYSTEM_CLOCK_MULTIPLIER
+        stopTime   : Cesium.JulianDate.fromDate(stopTime),
+        clockRange : Cesium.ClockRange.LOOP_STOP,
+        clockStep  : Cesium.ClockStep.SYSTEM_CLOCK_MULTIPLIER,
     });
     let epoch        = Cesium.JulianDate.toIso8601(CesiumClock.startTime);
     let timeInterval = new Cesium.TimeInterval({
         start: CesiumClock.startTime,
-        stop: CesiumClock.stopTime,
+        stop : CesiumClock.stopTime,
     });
 
-    return [{
-        "id": "document",
-        "name": "CZML Path",
-        "version": "1.0",
-        "clock": {
-            "interval": timeInterval.toString(),
-            "currentTime": epoch,
-            "multiplier": 1,
-            "range": "CLAMPED" // Do not loop
-        }
-    }, {
-        "id": "path",
-        "name": "path",
-        "description": "<p>CZML description<br> Second line</p>",
-        "properties": {
-            "travelled": {
-                "epoch": epoch,
-                "number": [
-                    0, 0, // 0% at epoch
-                    runForSeconds, 100 // 100% when done
-                ]
-            }
-        },
-        "path": {
-            "material": {
-                "polylineOutline": {
-                    "color": {
-                        "rgba": [0, 250, 218, 94]
+    return [
+        {
+            'id'     : 'document',
+            'name'   : 'CZML Path',
+            'version': '1.0',
+            'clock'  : {
+                'interval'   : timeInterval.toString(),
+                'currentTime': epoch,
+                'multiplier' : 1,
+                'range'      : 'CLAMPED', // Do not loop
+            },
+        }, {
+            'id'         : 'path',
+            'name'       : 'path',
+            'description': '<p>CZML description<br> Second line</p>',
+            'properties' : {
+                'travelled': {
+                    'epoch' : epoch,
+                    'number': [
+                        0, 0, // 0% at epoch
+                        runForSeconds, 100, // 100% when done
+                    ],
+                },
+            },
+            'path'       : {
+                'material'  : {
+                    'polylineOutline': {
+                        'color'       : {
+                            'rgba': [0, 250, 218, 94],
+                        },
+                        'outlineColor': {
+                            'rgba': [0, 250, 218, 94],
+                        },
+                        'outlineWidth': 5,
                     },
-                    "outlineColor": {
-                        "rgba": [0, 250, 218, 94]
-                    },
-                    "outlineWidth": 5
-                }
+                },
+                'width'     : 8,
+                'leadTime'  : 0,
+                'trailTime' : 1000,
+                'resolution': 5,
             },
-            "width": 8,
-            "leadTime": 0,
-            "trailTime": 1000,
-            "resolution": 5
-        },
-        "billboard": billboard,
-        "label": {
-            "fillColor": {
-                "rgba": [255, 255, 255, 255]
+            'billboard'  : billboard,
+            'label'      : {
+                'fillColor'       : {
+                    'rgba': [255, 255, 255, 255],
+                },
+                'font'            : '12pt Arial',
+                'horizontalOrigin': 'LEFT',
+                'pixelOffset'     : {
+                    'cartesian2': [10, 0],
+                },
+                'style'           : 'FILL',
+                'text'            : 'Travelling',
+                'showBackground'  : true,
+                'backgroundColor' : {
+                    'rgba': [1, 1, 1, 0],
+                },
             },
-            "font": "12pt Arial",
-            "horizontalOrigin": "LEFT",
-            "pixelOffset": {
-                "cartesian2": [10, 0]
+            'position'   : {
+                'epoch'              : epoch,
+                'cartographicRadians': cartographicRadians,
             },
-            "style": "FILL",
-            "text": "Travelling",
-            "showBackground": true,
-            "backgroundColor": {
-                "rgba": [1, 1, 1, 0]
-            }
-        },
-        "position": {
-            "epoch": epoch,
-            "cartographicRadians": cartographicRadians
-        }
-    }];
+        }];
 }
 
 /**
  *
  * @param czml
  */
-function createPath(czml) {
+function createPath(czml, reinitTravelLinePreview) {
     let dataSourceReference;
     let pathEntity;
     let pathPromise = Cesium.CzmlDataSource.load(czml);
@@ -287,7 +301,7 @@ function createPath(czml) {
     //@todo should lock the clock multiplier to prevent going over this limit
     let maxTravelTicks = 6000;
 
-    pathPromise.then(function (dataSource) {
+    pathPromise.then(function(dataSource) {
 
         let absoluteTravelled   = 0;
         let percentageTravelled = 0;
@@ -307,13 +321,13 @@ function createPath(czml) {
                 // Smooth path interpolation
                 pathEntity.position.setInterpolationOptions({
                     interpolationAlgorithm: Cesium.HermitePolynomialApproximation,
-                    interpolationDegree: 2
+                    interpolationDegree   : 2,
                 });
 
                 isTravelling = true;
 
                 log(travellingEntity);
-                log('Pre-travel: Removing travelling entity ' + travellingEntity._id)
+                log('Pre-travel: Removing travelling entity ' + travellingEntity._id);
                 viewer.entities.remove(travellingEntity);
 
                 viewer.clock.shouldAnimate = true;
@@ -344,12 +358,16 @@ function createPath(czml) {
                 log('Final position');
                 log(finalPosition);
 
-                log('After-travel: adding travelling entity ' + travellingEntity._id)
+                log('After-travel: adding travelling entity ' + travellingEntity._id);
+                log(travellingEntity);
                 travellingEntity.position = finalPosition;
                 viewer.entities.add(travellingEntity);
 
                 // Reset travel preview line, to allow drawing another line
-                initTravelLinePreview(travellingEntity);
+                if (reinitTravelLinePreview) {
+                    log('Re-init travel line preview');
+                    initTravelLinePreview(travellingEntity);
+                }
 
                 isTravelling = false;
 
@@ -362,11 +380,11 @@ function createPath(czml) {
                 // Remove the path
                 viewer.dataSources.remove(dataSourceReference);
 
-                Object.keys(addedEntities).forEach(function (key) {
-                    if (typeof addedEntities[key].position === "undefined" || key === travellingEntity.id) {
+                Object.keys(addedEntities).forEach(function(key) {
+                    if (typeof addedEntities[key].position === 'undefined' || key === travellingEntity.id) {
                         return; // forEach equivalent of 'continue';
                     }
-                    let entity = addedEntities[key];
+                    let entity   = addedEntities[key];
                     let distance = Cesium.Cartesian3.distance(finalPosition, entity.position._value);
 
                     log('Distance to ' + key + ' | ' + entity.type + ' entity: ' + distance);
@@ -376,8 +394,7 @@ function createPath(czml) {
                         // hmm
                         audio.play();
 
-                        if(entity.type === 'Country center')
-                        {
+                        if (entity.type === 'Country center') {
                             entity.Country.changeColor(travellingEntity.point.color);
                         }
                     }
@@ -387,6 +404,23 @@ function createPath(czml) {
 
             if (pathEntity) {
                 counterDisplay.textContent = 'Travelled: ' + Math.round(absoluteTravelled) + ' / ' + maxTravelTicks;
+
+                let currentLocation          = pathEntity.position.getValue(clock.currentTime);
+                locationDisplayX.textContent = 'X: ' + currentLocation.x;
+                locationDisplayY.textContent = 'Y: ' + currentLocation.y;
+                locationDisplayZ.textContent = 'Z: ' + currentLocation.z;
+
+                //new Cesium.Cartesian3(currentLocation.x, currentLocation.y, currentLocation.z);
+
+                let cartographicPosition = Cesium.Cartographic.fromCartesian(currentLocation);
+
+                let latitude                         = Cesium.Math.toDegrees(cartographicPosition.latitude).toFixed(5);
+                let longitude                        = Cesium.Math.toDegrees(cartographicPosition.longitude).toFixed(5);
+                locationDisplayLatitude.textContent  = 'Latitude: ' + latitude;
+                locationDisplayLongitude.textContent = 'Longitude: ' + longitude;
+
+                locationDisplayDMSLatitude.textContent  = 'DMS latitude: ' + deg_to_dms(latitude);
+                locationDisplayDMSLongitude.textContent = 'DMS longitude: ' + deg_to_dms(longitude);
 
                 percentageTravelled = pathEntity.properties.travelled.getValue(clock.currentTime);
                 if (Cesium.defined(percentageTravelled)) {
@@ -491,11 +525,11 @@ function convertPositionsToCartographicRadians(positions, time) {
 function createPoint(worldPosition) {
     return viewer.entities.add({
         position: setHeightOfPosition(worldPosition, 10000),
-        point: {
-            color: Cesium.Color.WHITE,
-            pixelSize: 0,
-            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND
-        }
+        point   : {
+            color          : Cesium.Color.WHITE,
+            pixelSize      : 0,
+            heightReference: Cesium.HeightReference.RELATIVE_TO_GROUND,
+        },
     });
 }
 
@@ -508,11 +542,11 @@ function drawWallShape(positionData) {
     return viewer.entities.add({
         name: 'Red wall',
         wall: {
-            positions: positionData,
+            positions     : positionData,
             minimumHeights: Array(positionData.length).fill(0),
             maximumHeights: Array(positionData.length).fill(globalConfig.wallHeight),
-            material: Cesium.Color.RED
-        }
+            material      : Cesium.Color.RED,
+        },
     });
 }
 
@@ -524,9 +558,9 @@ function drawWallShape(positionData) {
 function drawTemporaryShape(positionData) {
     return viewer.entities.add({
         polyline: {
-            positions: positionData,
+            positions    : positionData,
             clampToGround: false,
-            width: 3
+            width        : 3,
         },
     });
 }
@@ -534,10 +568,10 @@ function drawTemporaryShape(positionData) {
 /**
  * Right-click initiates entity travel
  */
-ScreenSpaceEventHandler.setInputAction(function () {
+ScreenSpaceEventHandler.setInputAction(function() {
     // Must have at least 2 points to draw a path
     if (activeShapePoints.length < 2) {
-        log(activeShapePoints)
+        log(activeShapePoints);
         return;
     }
 
@@ -561,7 +595,7 @@ ScreenSpaceEventHandler.setInputAction(function () {
     log('Stop: ' + stopPosition);
     log('Distance: ' + distance);
     let czml = createCZML(startPosition, stopPosition, travelTime, billboard);
-    createPath(czml);
+    createPath(czml, true);
 
     // Redraw the shape so it's not dynamic and remove the dynamic shape.
     viewer.entities.remove(floatingPoint);
